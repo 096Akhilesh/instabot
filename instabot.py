@@ -3,11 +3,11 @@ from textblob import TextBlob
 from textblob.sentiments import NaiveBayesAnalyzer
 
 APP_ACCESS_TOKEN = '2532429914.34c54a5.220bc5e1491745b0bb882dc0829706bd'
-#Token Owner : akhilesh tomar
+# Token Owner : akhilesh tomar
 
 BASE_URL = 'https://api.instagram.com/v1/'
 
-#Function declaration to get your own info
+# Function declaration to get your own info
 
 
 def self_info():
@@ -223,12 +223,12 @@ def user_interest(insta_username):
             for x in response['outputs'][0]['data']['concepts']:
                 if x['value'] >= 0.9:
                     str = str + ' ' + x['name']
-    wordcloud= WordCloud(stopwords=STOPWORDS,background_color='white',width=1200,height=1000).generate(str)
+    wordcloud = WordCloud(stopwords=STOPWORDS,background_color='white',width=1200,height=1000).generate(str)
     plt.imshow(wordcloud)
     plt.axis('off')
     plt.show()
 
-user_interest('akhilkr.096')
+
 
 def start_bot():
     while True:
@@ -242,7 +242,8 @@ def start_bot():
         print "e.Like the recent post of a user\n"
         print "f.Make a comment on the recent post of a user\n"
         print "g.Delete negative comments from the recent post of a user\n"
-        print "h.Exit"
+        print "h.User interest\n"
+        print "i.Exit"
 
         choice = raw_input("Enter you choice: ")
         if choice == "a":
@@ -265,6 +266,9 @@ def start_bot():
            insta_username = raw_input("Enter the username of the user: ")
            delete_negative_comment(insta_username)
         elif choice == "h":
+            user_interest('akhilkr.096')
+        elif choice == "i":
             exit()
         else:
             print "wrong choice"
+start_bot()
