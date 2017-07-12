@@ -109,6 +109,7 @@ def get_user_post(insta_username):
         print 'Status code other than 200 received!'
 
 #Function declaration to get the ID of the recent post of a user by username
+# test for status
 
 def get_post_id(insta_username):
     user_id = get_user_id(insta_username)
