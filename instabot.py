@@ -1,13 +1,13 @@
 import requests, urllib
+from textblob import TextBlob
+from textblob.sentiments import NaiveBayesAnalyzer
 
 APP_ACCESS_TOKEN = '2532429914.34c54a5.220bc5e1491745b0bb882dc0829706bd'
 #Token Owner : akhilesh tomar
 
 BASE_URL = 'https://api.instagram.com/v1/'
 
-'''
-Function declaration to get your own info
-'''
+#Function declaration to get your own info
 
 
 def self_info():
@@ -26,10 +26,7 @@ def self_info():
     else:
         print 'Status code other than 200 received!'
 
-
-'''
-Function declaration to get the ID of a user by username
-'''
+#Function declaration to get the ID of a user by username
 
 
 def get_user_id(insta_username):
@@ -46,10 +43,7 @@ def get_user_id(insta_username):
         print 'Status code other than 200 received!'
         exit()
 
-
-'''
-Function declaration to get the info of a user by username
-'''
+#Function declaration to get the info of a user by username
 
 
 def get_user_info(insta_username):
@@ -72,10 +66,7 @@ def get_user_info(insta_username):
     else:
         print 'Status code other than 200 received!'
 
-
-'''
-Function declaration to get your recent post
-'''
+#Function declaration to get your recent post
 
 
 def get_own_post():
@@ -94,10 +85,7 @@ def get_own_post():
     else:
         print 'Status code other than 200 received!'
 
-
-'''
-Function declaration to get the recent post of a user by username
-'''
+#Function declaration to get the recent post of a user by username
 
 
 def get_user_post(insta_username):
@@ -120,6 +108,127 @@ def get_user_post(insta_username):
     else:
         print 'Status code other than 200 received!'
 
+#Function declaration to get the ID of the recent post of a user by username
+
+def get_post_id(insta_username):
+    user_id = get_user_id(insta_username)
+    if user_id == None:
+        print 'User does not exist!'
+        exit()
+    request_url = (BASE_URL + 'users/%s/media/recent/?access_token=%s') % (user_id, APP_ACCESS_TOKEN)
+    print 'GET request url : %s' % (request_url)
+    user_media = requests.get(request_url).json()
+
+    if user_media['meta']['code'] == 200:
+        if len(user_media['data']):
+            return user_media['data'][0]['id']
+        else:
+            print 'There is no recent post of the user!'
+            exit()
+    else:
+        print 'Status code other than 200 received!'
+        exit()
+
+#Function declaration to like the recent post of a user
+
+
+def like_a_post(insta_username):
+    media_id = get_post_id(insta_username)
+    request_url = (BASE_URL + 'media/%s/likes') % (media_id)
+    payload = {"access_token": APP_ACCESS_TOKEN}
+    print 'POST request url : %s' % (request_url)
+    post_a_like = requests.post(request_url, payload).json()
+    if post_a_like['meta']['code'] == 200:
+        print 'Like was successful!'
+    else:
+        print 'Your like was unsuccessful. Try again!'
+
+#Function declaration to make a comment on the recent post of the user
+
+
+def post_a_comment(insta_username):
+    media_id = get_post_id(insta_username)
+    comment_text = raw_input("Your comment: ")
+    payload = {"access_token": APP_ACCESS_TOKEN, "text" : comment_text}
+    request_url = (BASE_URL + 'media/%s/comments') % (media_id)
+    print 'POST request url : %s' % (request_url)
+
+    make_comment = requests.post(request_url, payload).json()
+
+    if make_comment['meta']['code'] == 200:
+        print "Successfully added a new comment!"
+    else:
+        print "Unable to add comment. Try again!"
+
+
+#Function declaration to make delete negative comments from the recent post
+
+def delete_negative_comment(insta_username):
+    media_id = get_post_id(insta_username)
+    request_url = (BASE_URL + 'media/%s/comments/?access_token=%s') % (media_id, APP_ACCESS_TOKEN)
+    print 'GET request url : %s' % (request_url)
+    comment_info = requests.get(request_url).json()
+
+    if comment_info['meta']['code'] == 200:
+        if len(comment_info['data']):
+            #Here's a naive implementation of how to delete the negative comments :)
+            for x in range(0, len(comment_info['data'])):
+                comment_id = comment_info['data'][x]['id']
+                comment_text = comment_info['data'][x]['text']
+                blob = TextBlob(comment_text, analyzer=NaiveBayesAnalyzer())
+                if (blob.sentiment.p_neg > blob.sentiment.p_pos):
+                    print 'Negative comment : %s' % (comment_text)
+                    delete_url = (BASE_URL + 'media/%s/comments/%s/?access_token=%s') % (media_id, comment_id, APP_ACCESS_TOKEN)
+                    print 'DELETE request url : %s' % (delete_url)
+                    delete_info = requests.delete(delete_url).json()
+
+                    if delete_info['meta']['code'] == 200:
+                        print 'Comment successfully deleted!\n'
+                    else:
+                        print 'Unable to delete comment!'
+                else:
+                    print 'Positive comment : %s\n' % (comment_text)
+        else:
+            print 'There are no existing comments on the post!'
+    else:
+        print 'Status code other than 200 received!'
+from clarifai.rest import ClarifaiApp
+app=ClarifaiApp(api_key='b72cf6089c3d45e38b291b38f3559d50')
+model_list = []
+model1=app.models.get('apparel')
+model2=app.models.get('food-items-v1.0')
+model3=app.models.get('travel-v1.0')
+model4=app.models.get('nsfw-v1.0')
+model_list.append(model1)
+model_list.append(model2)
+model_list.append(model3)
+model_list.append(model4)
+from wordcloud import WordCloud,STOPWORDS
+import matplotlib.pyplot as plt
+
+# function to find the users interest
+
+def user_interest(insta_username):
+    media_id= get_post_id(insta_username)
+    request_url = BASE_URL + ('media/%s?access_token=%s') % (media_id, APP_ACCESS_TOKEN)
+    media_info = requests.get(request_url).json()
+
+    str = ''
+    if media_info['meta']['code'] == 200:
+        url = media_info['data']['images']['standard_resolution']['url']
+        for x in model_list:
+
+            response = x.predict_by_url(url)
+
+            for x in response['outputs'][0]['data']['concepts']:
+                if x['value'] >= 0.9:
+                    str = str + ' ' + x['name']
+    wordcloud= WordCloud(stopwords=STOPWORDS,background_color='white',width=1200,height=1000).generate(str)
+    plt.imshow(wordcloud)
+    plt.axis('off')
+    plt.show()
+
+user_interest('akhilkr.096')
 
 def start_bot():
     while True:
@@ -130,7 +239,10 @@ def start_bot():
         print "b.Get details of a user by username\n"
         print "c.Get your own recent post\n"
         print "d.Get the recent post of a user by username\n"
-        print "j.Exit"
+        print "e.Like the recent post of a user\n"
+        print "f.Make a comment on the recent post of a user\n"
+        print "g.Delete negative comments from the recent post of a user\n"
+        print "h.Exit"
 
         choice = raw_input("Enter you choice: ")
         if choice == "a":
@@ -143,7 +255,16 @@ def start_bot():
         elif choice == "d":
             insta_username = raw_input("Enter the username of the user: ")
             get_user_post(insta_username)
-        elif choice == "j":
+        elif choice=="e":
+           insta_username = raw_input("Enter the username of the user: ")
+           like_a_post(insta_username)
+        elif choice=="f":
+           insta_username = raw_input("Enter the username of the user: ")
+           post_a_comment(insta_username)
+        elif choice=="g":
+           insta_username = raw_input("Enter the username of the user: ")
+           delete_negative_comment(insta_username)
+        elif choice == "h":
             exit()
         else:
             print "wrong choice"
